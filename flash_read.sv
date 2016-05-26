@@ -15,7 +15,7 @@ parameter finished = 5'b100_01;
 
 assign finish = state[0]; 
 
-always_ff@(posedge clk) 
+always_ff@(posedge clk)
 	case(state) 
 		
 		idle: 
@@ -35,10 +35,12 @@ always_ff@(posedge clk)
 			
 		wait_read: 
 			begin 
-				if(data_valid) state <= finished; 
+				if(~data_valid) state <= finished; 
 			end 
 			
-		finished: state <= idle; 
+		finished: state <= idle;
+
+		default: state <= idle; 
 		
 	endcase 
 	
