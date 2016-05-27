@@ -257,7 +257,7 @@ wire count_to;
 Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(count_to)); //replace count_to with 32'h470 for testing
 
 //Generate Count_to according to desired frequency, default 22KHz/32'h470
-speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_event), .speed_reset(speed_reset_event), .out_count_to(count_to), .clk(CLK_50M));
+speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_event), .speed_reset(speed_reset_event), .out_count(count_to), .clk(CLK_50M));
 
 //Get data from flash 
 wire startFlash, endFlash; 
@@ -270,6 +270,14 @@ assign Sample_Clk_Signal = Clock_1KHz;
 //Audio Generation Signal
 //Note that the audio needs signed data - so convert 1 bit to 8 bits signed
 wire [7:0] audio_data = {~Sample_Clk_Signal,{7{Sample_Clk_Signal}}}; //generate signed sample audio signal
+
+// new Keyboard Interface
+wire read_signal;
+wire [1:0] direction_reset;
+new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
+							.key(kbd_received_ascii_code), 
+							.start_read(read_signal),
+							.dir(direction_reset));
 
 
 
