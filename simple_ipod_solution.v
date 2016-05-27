@@ -253,7 +253,11 @@ flash flash_inst (
 //Generate 22KHz clock for flash memory 
 wire Clock_22KHz; 
 wire clock_divider_reset = 0; 
-Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(32'h470)); 
+wire count_to;
+Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(count_to)); //replace count_to with 32'h470 for testing
+
+//Generate Count_to according to desired frequency, default 22KHz/32'h470
+speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_event), .speed_reset(speed_reset_event), .out_count_to(count_to), .clk(CLK_50M));
 
 //Get data from flash 
 wire startFlash, endFlash; 
