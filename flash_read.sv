@@ -1,14 +1,14 @@
-module flash_read(clk, read, waitrequest, readdata, data_valid, start, finish); 
+module flash_read(clk, waitrequest, /*readdata,*/ data_valid, start, finish); 
 
-input clk, read, start;
-output data_valid, waitrequest, finish;  
-output [31:0] readdata;
+input clk, start, data_valid, waitrequest; 
+output /*data_valid, waitrequest,*/ finish;  
+//output [31:0] readdata; Temporarily removing due to quartus issue 
 
 logic [4:0] state;    
 
                   //432_10 
 parameter idle = 5'b000_00; 
-parameter check_read = 5'b001_00; 
+//parameter check_read = 5'b001_00; 
 parameter slave_ready = 5'b010_00; 
 parameter wait_read = 5'b011_00; 
 parameter finished = 5'b100_01; 
@@ -20,13 +20,13 @@ always_ff@(posedge clk)
 		
 		idle: 
 			begin 
-				if(start) state <= check_read; 
+				if(start) state <= slave_ready; 
 			end 
 			
-		check_read: 
+		/*check_read: 
 			begin 
 				if(read) state <= slave_ready; 
-			end
+			end */
 			
 		slave_ready: 
 			begin

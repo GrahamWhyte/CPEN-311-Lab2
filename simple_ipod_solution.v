@@ -259,24 +259,32 @@ Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_div
 //Generate Count_to according to desired frequency, default 22KHz/32'h470
 speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_event), .speed_reset(speed_reset_event), .out_count(count_to), .clk(CLK_50M));
 
+
+//set address, get audio data
+wire [15:0] audio_signal;  
+addr_inc audio(.clk(CLK_50M), .start(read_signal), .change(direction_reset), .endFlash(endFlash), .address(flash_mem_address), 
+				.byteenable(flash_mem_byteenable), .startFlash(flash_mem_read), .finish(audio_done), .songData(flash_mem_readdata), .outData(audio_signal)); 
+ 
 //Get data from flash 
-wire startFlash, endFlash; 
-flash_read getData(.clk(Clock_22KHz), .read(flash_mem_read), .waitrequest(flash_mem_waitrequest), .readdata(flash_mem_readdata), 
-					.data_valid(flash_mem_readdatavalid), .start(startFlash), .finish(endFlash)); 
+wire endFlash, audio_done; 
+flash_read getData(.clk(CLK_50M), /*.read(flash_mem_read),*/ .waitrequest(flash_mem_waitrequest), /*.readdata(flash_mem_readdata),*/ //Temporarily removing due to quartus issue   
+					.data_valid(flash_mem_readdatavalid), .start(flash_mem_read), .finish(endFlash)); 
             
 
-assign Sample_Clk_Signal = Clock_1KHz;
+//assign Sample_Clk_Signal = Clock_1KHz;
 
 //Audio Generation Signal
 //Note that the audio needs signed data - so convert 1 bit to 8 bits signed
-wire [7:0] audio_data = {~Sample_Clk_Signal,{7{Sample_Clk_Signal}}}; //generate signed sample audio signal
+//wire [7:0] audio_data = {~Sample_Clk_Signal,{7{Sample_Clk_Signal}}}; //generate signed sample audio signal
+
+wire audio_data = audio_signal[15:8]; 
 
 // new Keyboard Interface
 wire read_signal;
 wire [1:0] direction_reset;
-new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
+new_keyboard_interface keyboard_interface(.clk(Clock_22KHz), 
 							.key(kbd_received_ascii_code), 
-							.start_read(read_signal),
+							.start_read(read_signal), 
 							.dir(direction_reset));
 
 

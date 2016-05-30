@@ -7,9 +7,9 @@ Outputs: Address and bytes to read from
 		 Start signal for flash and end signal 
 */
 
-module addr_inc(clk, audioClk, start, change, endFlash, address, byteenable, startFlash, finish, songData, outData); 
+module addr_inc(clk, /*audioClk,*/ start, change, endFlash, address, byteenable, startFlash, finish, songData, outData); 
 
-input clk, audioClk, start, endFlash;
+input clk, /*audioClk,*/ start, endFlash;
 input [1:0] change;  
 input [31:0] songData; 
 output startFlash, finish; 
@@ -24,7 +24,7 @@ parameter inc_addr = 5'b011_00;
 parameter dec_addr = 5'b100_00; 
 parameter finished = 5'b101_10; 
 parameter get_data = 5'b110_00; 
-parameter read_data = 5'b111_00; 
+//parameter read_data = 5'b111_00; 
 
 logic [4:0] state; 
 logic flag; 
@@ -51,11 +51,9 @@ always_ff@(posedge clk) begin
 				   if(endFlash) state <= get_data; 
 				   end 
 				   
-		get_data: begin 
-				  if (audioClk) state <= read_data;
-				  end 
+		get_data: state <= checkInc; 
 				  
-		read_data: state <= checkInc; 
+		//read_data: state <= checkInc; 
 				   
 		checkInc: begin 
 				  if(dir) state <= dec_addr; 
@@ -79,43 +77,54 @@ end
 
 //Output logic 
 always_ff@(posedge clk) begin 
+	case (state)
 	
-	if (state == read_data) begin 
-		if (flag) begin
-			outData = songData [31:16]; 
-			flag = ~flag;
+		get_data: begin 
+			if (flag) begin
+			outData <= songData [31:16]; 
+			flag <= ~flag;
+			end
+		
+			else begin 
+			outData <= songData [15:0]; 
+			flag <= ~flag;  
+			end 
+			address <= address; //address does not change in this state 
 		end 
-		else begin 
-			outData = songData [15:0]; 
-			flag = ~flag;  
+		
+		dec_addr: begin
+			if (restart) 
+				address = 524287;
+			else begin 
+			address = address - 23'd1; 
+				if (address < 0) 
+					address = 0;  
+			end 
+			outData <= outData; //data does not change in this state 
 		end 
-	end 
-	
-	else if (state == dec_addr) begin 
-		if (restart) 
-			address = 524287;
-		else begin 
-		address = address - 1; 
-			if (address < 0) 
-				address = 0;  
+		
+		inc_addr: begin 
+			if(restart) 
+				address = 0; 
+			else begin 
+				address = address + 23'd1; 
+				if (address > 524287) 
+					address = 524287; 
+			end 
+			outData <= outData; //data does not change in this state  
 		end 
-		end 
-	
-	else if (state == inc_addr) begin 
-		if(restart) 
-			address = 0; 
-		else begin 
-			address = address + 1; 
-			if (address > 524287) 
-				address = 524287; 
-		end 
-		end 
-			 
+		
+		default: begin 
+			address <= address; 
+			outData <= outData;
+		end
+		
+	endcase 
 end 
 
 endmodule 
-	
-		
+
+
 
 
 
