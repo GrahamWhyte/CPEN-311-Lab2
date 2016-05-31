@@ -9,10 +9,9 @@ Outputs: Address and bytes to read from
 
 `define address_max 23'h7FFFF
 
-module addr_inc(clk, audioClk, start, change, endFlash, address, byteenable, startFlash, finish, songData, outData); 
+module addr_inc(clk, audioClk, start, dir, restart, endFlash, address, byteenable, startFlash, finish, songData, outData); 
 
-input clk, audioClk, start, endFlash;
-input [1:0] change;  
+input clk, audioClk, start, endFlash, dir, restart;  
 input [31:0] songData; 
 output startFlash, finish; 
 output [3:0] byteenable; 
@@ -29,15 +28,11 @@ parameter get_data = 5'b110_00;
 parameter read_data = 5'b111_00; 
 
 logic [4:0] state; 
-logic flag; 
-
-wire dir, restart; 
+logic flag;  
 
 assign startFlash = state[0]; 
 assign finish = state[1]; 
-
-assign dir = change[1]; 
-assign restart = change[0]; 
+ 
 
 assign byteenable = 4'b1111; //always read all data 
 		
@@ -97,25 +92,29 @@ always_ff@(posedge clk) begin
 		dec_addr: begin
 			if (restart) begin 
 				address <= `address_max;
+				flag <= 1'b1; //Odd numbered address
+			end 
 			else begin 
+			flag <= flag; 
 			address <= address - 23'd1; 
 				if (address < 0) 
 					address <= `address_max;  
 			end 
-			outData <= outData; //data does not change in this state
-			flag <= flag; //flag does not change in this state 
+			outData <= outData; //data does not change in this state 
 		end 
 		
 		inc_addr: begin 
-			if(restart) 
+			if(restart) begin 
 				address <= 0; 
+				flag <= 0; //Even numbered address 
+			end 
 			else begin 
+				flag <= flag; 
 				address <= address + 23'd1; 
 				if (address > `address_max) 
 					address <= 0; 
 			end 
-			outData <= outData; //data does not change in this state  
-			flag <= flag; //flag does not change in this state  
+			outData <= outData; //data does not change in this state  	  
 		end 
 		
 		default: begin 

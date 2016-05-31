@@ -253,16 +253,17 @@ flash flash_inst (
 //Generate 22KHz clock for flash memory 
 wire Clock_22KHz; 
 wire clock_divider_reset = 0; 
-wire count_to;
-Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(32'h470)); //replace count_to with 32'h470 for testing
+wire [31:0] count_to;
+Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(count_to)); //replace count_to with 32'h470 for testing
 
 //Generate Count_to according to desired frequency, default 22KHz/32'h470
 speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_event), .speed_reset(speed_reset_event), .out_count(count_to), .clk(CLK_50M));
 
 
 //set address, get audio data
-wire [7:0] audio_signal;  
-addr_inc audio(.clk(CLK_50M), .audioClk(Clk_22KHz_Synchronized), .start(read_signal), .change(direction_reset), .endFlash(endFlash), .address(flash_mem_address), 
+wire [7:0] audio_signal;
+wire direction, restart_read;   
+addr_inc audio(.clk(CLK_50M), .audioClk(Clk_22KHz_Synchronized), .start(read_signal), .dir(direction), .restart(restart_read),  .endFlash(endFlash), .address(flash_mem_address), 
 				.byteenable(flash_mem_byteenable), .startFlash(flash_mem_read), .finish(audio_done), .songData(flash_mem_readdata), .outData(audio_signal)); 
  
 //Get data from flash 
@@ -283,9 +284,11 @@ wire [7:0] audio_data = audio_signal;
 wire read_signal;
 wire [1:0] direction_reset;
 new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
-							.key(fake_key),     //change to kbd_received_ascii_code 
+							.key(kbd_received_ascii_code),
+							.readFinish(audio_done), //change to kbd_received_ascii_code 
 							.start_read(read_signal), 
-							.dir(direction_reset));
+							.dir(direction),
+							.restart(restart_read)); 
 							
 							
 wire Clk_22KHz_Synchronized; 
@@ -294,7 +297,7 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 							
 							
 //For testing without keyboard ONLY							
-reg [7:0] fake_key; 
+/*reg [7:0] fake_key; 
 always @(*) begin 
 	case(SW[4:0]) 
 		5'b00001: fake_key = character_E; 
@@ -304,7 +307,7 @@ always @(*) begin
 		5'b10000: fake_key = character_R; 
 		default: fake_key = 8'b0000_0000; 
 	endcase 
-end 
+end */
 
 
 
