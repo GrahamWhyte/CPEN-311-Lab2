@@ -254,20 +254,20 @@ flash flash_inst (
 wire Clock_22KHz; 
 wire clock_divider_reset = 0; 
 wire count_to;
-Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(count_to)); //replace count_to with 32'h470 for testing
+Clock_Divider FlashClock(.inClk(CLK_50M), .outClk(Clock_22KHz), .reset(clock_divider_reset), .countTo(32'h470)); //replace count_to with 32'h470 for testing
 
 //Generate Count_to according to desired frequency, default 22KHz/32'h470
 speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_event), .speed_reset(speed_reset_event), .out_count(count_to), .clk(CLK_50M));
 
 
 //set address, get audio data
-wire [15:0] audio_signal;  
-addr_inc audio(.clk(CLK_50M), .start(read_signal), .change(direction_reset), .endFlash(endFlash), .address(flash_mem_address), 
+wire [7:0] audio_signal;  
+addr_inc audio(.clk(CLK_50M), .audioClk(Clk_22KHz_Synchronized), .start(read_signal), .change(direction_reset), .endFlash(endFlash), .address(flash_mem_address), 
 				.byteenable(flash_mem_byteenable), .startFlash(flash_mem_read), .finish(audio_done), .songData(flash_mem_readdata), .outData(audio_signal)); 
  
 //Get data from flash 
 wire endFlash, audio_done; 
-flash_read getData(.clk(CLK_50M), /*.read(flash_mem_read),*/ .waitrequest(flash_mem_waitrequest), /*.readdata(flash_mem_readdata),*/ //Temporarily removing due to quartus issue   
+flash_read getData(.clk(CLK_50M), .waitrequest(flash_mem_waitrequest), 
 					.data_valid(flash_mem_readdatavalid), .start(flash_mem_read), .finish(endFlash)); 
             
 
@@ -277,15 +277,34 @@ flash_read getData(.clk(CLK_50M), /*.read(flash_mem_read),*/ .waitrequest(flash_
 //Note that the audio needs signed data - so convert 1 bit to 8 bits signed
 //wire [7:0] audio_data = {~Sample_Clk_Signal,{7{Sample_Clk_Signal}}}; //generate signed sample audio signal
 
-wire audio_data = audio_signal[15:8]; 
+wire [7:0] audio_data = audio_signal; 
 
 // new Keyboard Interface
 wire read_signal;
 wire [1:0] direction_reset;
-new_keyboard_interface keyboard_interface(.clk(Clock_22KHz), 
-							.key(kbd_received_ascii_code), 
+new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
+							.key(fake_key),     //change to kbd_received_ascii_code 
 							.start_read(read_signal), 
 							.dir(direction_reset));
+							
+							
+wire Clk_22KHz_Synchronized; 
+async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .outclk(CLK_50M), .out_sync_sig(Clk_22KHz_Synchronized), .auto_reset(1'b1), .reset(1'b1));
+//doublesync Syncronize_Clocks(.indata(Clock_22KHz),.outdata(Clk_22KHz_Synchronized),.clk(CLK_50M),.reset(1'b1));							
+							
+							
+//For testing without keyboard ONLY							
+reg [7:0] fake_key; 
+always @(*) begin 
+	case(SW[4:0]) 
+		5'b00001: fake_key = character_E; 
+		5'b00010: fake_key = character_D; 
+		5'b00100: fake_key = character_B; 
+		5'b01000: fake_key = character_F; 
+		5'b10000: fake_key = character_R; 
+		default: fake_key = 8'b0000_0000; 
+	endcase 
+end 
 
 
 

@@ -7,15 +7,17 @@ Outputs: Address and bytes to read from
 		 Start signal for flash and end signal 
 */
 
-module addr_inc(clk, /*audioClk,*/ start, change, endFlash, address, byteenable, startFlash, finish, songData, outData); 
+`define address_max 23'h7FFFF
 
-input clk, /*audioClk,*/ start, endFlash;
+module addr_inc(clk, audioClk, start, change, endFlash, address, byteenable, startFlash, finish, songData, outData); 
+
+input clk, audioClk, start, endFlash;
 input [1:0] change;  
 input [31:0] songData; 
 output startFlash, finish; 
 output [3:0] byteenable; 
 output [22:0] address; 
-output [15:0] outData; //To audio 
+output [7:0] outData; //To audio 
 
 parameter idle = 5'b000_00; 
 parameter readFlash = 5'b001_01; 
@@ -24,7 +26,7 @@ parameter inc_addr = 5'b011_00;
 parameter dec_addr = 5'b100_00; 
 parameter finished = 5'b101_10; 
 parameter get_data = 5'b110_00; 
-//parameter read_data = 5'b111_00; 
+parameter read_data = 5'b111_00; 
 
 logic [4:0] state; 
 logic flag; 
@@ -51,9 +53,9 @@ always_ff@(posedge clk) begin
 				   if(endFlash) state <= get_data; 
 				   end 
 				   
-		get_data: state <= checkInc; 
+		get_data: if(audioClk) state <= read_data; 
 				  
-		//read_data: state <= checkInc; 
+		read_data: state <= checkInc; 
 				   
 		checkInc: begin 
 				  if(dir) state <= dec_addr; 
@@ -79,44 +81,47 @@ end
 always_ff@(posedge clk) begin 
 	case (state)
 	
-		get_data: begin 
-			if (flag) begin
-			outData <= songData [31:16]; 
+		read_data: begin 
+			if (flag) begin //Flag = 1 means odd address 
+			outData <= songData [31:24]; 
 			flag <= ~flag;
 			end
 		
-			else begin 
-			outData <= songData [15:0]; 
+			else begin //Flag = 0 means even address 
+			outData <= songData [15:8]; 
 			flag <= ~flag;  
-			end 
+			end  
 			address <= address; //address does not change in this state 
 		end 
 		
 		dec_addr: begin
-			if (restart) 
-				address = 524287;
+			if (restart) begin 
+				address <= `address_max;
 			else begin 
-			address = address - 23'd1; 
+			address <= address - 23'd1; 
 				if (address < 0) 
-					address = 0;  
+					address <= `address_max;  
 			end 
-			outData <= outData; //data does not change in this state 
+			outData <= outData; //data does not change in this state
+			flag <= flag; //flag does not change in this state 
 		end 
 		
 		inc_addr: begin 
 			if(restart) 
-				address = 0; 
+				address <= 0; 
 			else begin 
-				address = address + 23'd1; 
-				if (address > 524287) 
-					address = 524287; 
+				address <= address + 23'd1; 
+				if (address > `address_max) 
+					address <= 0; 
 			end 
 			outData <= outData; //data does not change in this state  
+			flag <= flag; //flag does not change in this state  
 		end 
 		
 		default: begin 
 			address <= address; 
 			outData <= outData;
+			flag <= flag; 
 		end
 		
 	endcase 

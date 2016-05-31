@@ -1,8 +1,8 @@
-module flash_read(clk, waitrequest, /*readdata,*/ data_valid, start, finish); 
+module flash_read(clk, waitrequest, data_valid, start, finish); 
 
 input clk, start, data_valid, waitrequest; 
-output /*data_valid, waitrequest,*/ finish;  
-//output [31:0] readdata; Temporarily removing due to quartus issue 
+output finish;  
+
 
 logic [4:0] state;    
 
