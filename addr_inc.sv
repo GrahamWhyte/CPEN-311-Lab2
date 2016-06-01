@@ -18,17 +18,20 @@ output [3:0] byteenable;
 output [22:0] address; 
 output [7:0] outData; //To audio 
 
-parameter idle = 5'b000_00; 
-parameter readFlash = 5'b001_01; 
-parameter checkInc = 5'b010_00; 
-parameter inc_addr = 5'b011_00; 
-parameter dec_addr = 5'b100_00; 
-parameter finished = 5'b101_10; 
-parameter get_data = 5'b110_00; 
-parameter read_data = 5'b111_00; 
+parameter idle = 6'b0000_00; 
+parameter readFlash = 6'b0001_01; 
+parameter get_data_1 = 6'b0010_00; 
+parameter read_data_1 = 6'b0011_00; 
+parameter get_data_2 = 6'b0100_00; 
+parameter read_data_2 = 6'b0101_00; 
+parameter checkInc = 6'b0110_00; 
+parameter inc_addr = 6'b0111_00; 
+parameter dec_addr = 6'b1000_00; 
+parameter finished = 6'b1001_10; 
 
-logic [4:0] state; 
-logic flag;  
+
+logic [5:0] state; 
+//logic flag;  
 
 assign startFlash = state[0]; 
 assign finish = state[1]; 
@@ -45,12 +48,16 @@ always_ff@(posedge clk) begin
 			  end 
 			  
 		readFlash: begin 
-				   if(endFlash) state <= get_data; 
+				   if(endFlash) state <= get_data_1; 
 				   end 
 				   
-		get_data: if(audioClk) state <= read_data; 
+		get_data_1: if(audioClk) state <= read_data_1; 
 				  
-		read_data: state <= checkInc; 
+		read_data_1: state <= get_data_2;  
+		
+		get_data_2: if(audioClk) state <= read_data_2; 
+		
+		read_data_2: state <= checkInc; 
 				   
 		checkInc: begin 
 				  if(dir) state <= dec_addr; 
@@ -76,26 +83,21 @@ end
 always_ff@(posedge clk) begin 
 	case (state)
 	
-		read_data: begin 
-			if (flag) begin //Flag = 1 means odd address 
-			outData <= songData [31:24]; 
-			flag <= !flag;
-			end
-		
-			else begin //Flag = 0 means even address 
-			outData <= songData [15:8]; 
-			flag <= !flag;  
-			end  
+		read_data_1: begin 
+			if (dir) outData <= songData [31:24]; 
+			else outData <= songData [15:8]; 
 			address <= address; //address does not change in this state 
 		end 
 		
-		dec_addr: begin
-			if (restart) begin 
-				address <= `address_max;
-				flag <= 1'b1; //Odd numbered address
+		read_data_2: begin 
+			if(dir) outData <= songData [15:8]; 
+			else outData <= songData [31:24]; 
+			address <= address; //address does not change in this state  
 			end 
-			else begin 
-			flag <= flag; 
+		
+		dec_addr: begin
+			if (restart) address <= `address_max; 
+			else begin  
 			address <= address - 23'd1; 
 				if (address == 0) 
 					address <= `address_max;  
@@ -104,12 +106,8 @@ always_ff@(posedge clk) begin
 		end 
 		
 		inc_addr: begin 
-			if(restart) begin 
-				address <= 0; 
-				flag <= 0; //Even numbered address 
-			end 
+			if(restart) address <= 0;   
 			else begin 
-				flag <= flag; 
 				address <= address + 23'd1; 
 				if (address > `address_max) 
 					address <= 0; 
@@ -120,8 +118,7 @@ always_ff@(posedge clk) begin
 		default: begin 
 			address <= address; 
 			outData <= outData;
-			flag <= flag; 
-		end
+			end
 		
 	endcase 
 end 
