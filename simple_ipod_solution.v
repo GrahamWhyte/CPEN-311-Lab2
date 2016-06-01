@@ -296,6 +296,9 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 //doublesync Syncronize_Clocks(.indata(Clock_22KHz),.outdata(Clk_22KHz_Synchronized),.clk(CLK_50M),.reset(1'b1));							
 							
 							
+//generating LED counting at 1HZ
+one_hertz_clock LED_1_hertz(.one_hertz_clock(Clock_1Hz), .LEDR(LED[7:0]));
+							
 //For testing without keyboard ONLY							
 reg [7:0] fake_key; 
 always @(*) begin 
