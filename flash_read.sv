@@ -1,6 +1,6 @@
-module flash_read(clk, waitrequest, data_valid, start, finish); 
+module flash_read(clk, waitrequest, data_valid, start, finish, read); 
 
-input clk, start, data_valid, waitrequest; 
+input clk, start, data_valid, waitrequest, read; 
 output finish;  
 
 
@@ -8,7 +8,7 @@ logic [4:0] state;
 
                   //432_10 
 parameter idle = 5'b000_00; 
-//parameter check_read = 5'b001_00; 
+parameter check_read = 5'b001_00; 
 parameter slave_ready = 5'b010_00; 
 parameter wait_read = 5'b011_00; 
 parameter finished = 5'b100_01; 
@@ -20,22 +20,22 @@ always_ff@(posedge clk)
 		
 		idle: 
 			begin 
-				if(start) state <= slave_ready; 
+				if(start) state <= check_read; 
 			end 
 			
-		/*check_read: 
+		check_read: 
 			begin 
 				if(read) state <= slave_ready; 
-			end */
+			end 
 			
 		slave_ready: 
 			begin
-				if(~waitrequest) state <= wait_read; 
+				if(!waitrequest) state <= wait_read; 
 			end 
 			
 		wait_read: 
 			begin 
-				if(~data_valid) state <= finished; 
+				if(!data_valid) state <= finished; 
 			end 
 			
 		finished: state <= idle;

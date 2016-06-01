@@ -72,15 +72,17 @@ module new_keyboard_interface(input logic clk,
 			end 
 			
 			Foreward: begin 
-				if(key == `character_R || key == `character_lowercase_r)
-					next_state = Foreward_reset;
-				else if(key == `character_D || key == `character_lowercase_d)
-					next_state = Foreward_pause;
-				else if(key == `character_B || key == `character_lowercase_b)
-					next_state = Backward;
-				else
-					next_state = state;
-					
+				if(!readFinish) next_state = state; 
+				else begin 
+					if(key == `character_R || key == `character_lowercase_r)
+						next_state = Foreward_reset;
+					else if(key == `character_D || key == `character_lowercase_d)
+						next_state = Foreward_pause;
+					else if(key == `character_B || key == `character_lowercase_b)
+						next_state = Backward;
+					else
+						next_state = state;
+				end 
 				/*if(readFinish) restart = 0;
 				else restart = restart; */
 				end 
@@ -96,20 +98,21 @@ module new_keyboard_interface(input logic clk,
 				end 
 				
 			Backward_reset: begin 
-				//restart = 0; 
 				next_state = Backward;
 				end 
 			
 			Backward: begin 
-				if(key == `character_R || key == `character_lowercase_r)
-					next_state = Backward_reset;
-				else if(key == `character_D || key == `character_lowercase_d)
-					next_state = Backward_pause;
-				else if(key == `character_F || key == `character_lowercase_f)
-					next_state = Foreward;
-				else
-					next_state = state;
-					
+				if(!readFinish) next_state = state; 
+				else begin
+					if(key == `character_R || key == `character_lowercase_r)
+						next_state = Backward_reset;
+					else if(key == `character_D || key == `character_lowercase_d)
+						next_state = Backward_pause;
+					else if(key == `character_F || key == `character_lowercase_f)
+						next_state = Foreward;
+					else
+						next_state = state;
+				end 
 				/*if(readFinish) restart = 0; 
 				else restart = restart; */
 				end 
@@ -137,15 +140,21 @@ module new_keyboard_interface(input logic clk,
 	always_ff@(posedge clk) begin 	
 		case(state)
 		
-			Foreward_reset: restart = 1'b1; 
+			Foreward_reset: restart <= 1'b1; 
 			
-			Foreward: if(readFinish) restart = 1'b0; 
+			Foreward: begin 
+					  if(readFinish) restart <= 1'b0; 
+					  else restart <= restart; 
+					  end 
 			
-			Backward: if(readFinish) restart = 1'b0; 
+			Backward: begin 
+					  if(readFinish) restart <= 1'b0; 
+					  else restart <= restart; 
+					  end 
 			
-			Backward_reset: restart = 1'b1; 
+			Backward_reset: restart <= 1'b1; 
 			
-			default: restart = 1'b0; 
+			default: restart <= restart; 
 		endcase 
 	end 
 	

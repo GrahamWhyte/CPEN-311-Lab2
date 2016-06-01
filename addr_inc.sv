@@ -9,11 +9,11 @@ Outputs: Address and bytes to read from
 
 `define address_max 23'h7FFFF
 
-module addr_inc(clk, audioClk, start, dir, restart, endFlash, address, byteenable, startFlash, finish, songData, outData); 
+module addr_inc(clk, audioClk, start, dir, restart, endFlash, address, byteenable, startFlash, finish, read, songData, outData); 
 
 input clk, audioClk, start, endFlash, dir, restart;  
 input [31:0] songData; 
-output startFlash, finish; 
+output startFlash, finish, read; 
 output [3:0] byteenable; 
 output [22:0] address; 
 output [7:0] outData; //To audio 
@@ -32,7 +32,7 @@ logic flag;
 
 assign startFlash = state[0]; 
 assign finish = state[1]; 
- 
+assign read = state[0]; 
 
 assign byteenable = 4'b1111; //always read all data 
 		
@@ -79,12 +79,12 @@ always_ff@(posedge clk) begin
 		read_data: begin 
 			if (flag) begin //Flag = 1 means odd address 
 			outData <= songData [31:24]; 
-			flag <= ~flag;
+			flag <= !flag;
 			end
 		
 			else begin //Flag = 0 means even address 
 			outData <= songData [15:8]; 
-			flag <= ~flag;  
+			flag <= !flag;  
 			end  
 			address <= address; //address does not change in this state 
 		end 
@@ -97,7 +97,7 @@ always_ff@(posedge clk) begin
 			else begin 
 			flag <= flag; 
 			address <= address - 23'd1; 
-				if (address < 0) 
+				if (address == 0) 
 					address <= `address_max;  
 			end 
 			outData <= outData; //data does not change in this state 
@@ -127,7 +127,6 @@ always_ff@(posedge clk) begin
 end 
 
 endmodule 
-
 
 
 

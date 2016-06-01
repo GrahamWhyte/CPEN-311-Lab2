@@ -262,14 +262,14 @@ speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_e
 
 //set address, get audio data
 wire [7:0] audio_signal;
-wire direction, restart_read;   
+wire direction, restart_read, start_flash_read;   
 addr_inc audio(.clk(CLK_50M), .audioClk(Clk_22KHz_Synchronized), .start(read_signal), .dir(direction), .restart(restart_read),  .endFlash(endFlash), .address(flash_mem_address), 
-				.byteenable(flash_mem_byteenable), .startFlash(flash_mem_read), .finish(audio_done), .songData(flash_mem_readdata), .outData(audio_signal)); 
+				.byteenable(flash_mem_byteenable), .startFlash(start_flash_read), .finish(audio_done), .songData(flash_mem_readdata), .outData(audio_signal), .read(flash_mem_read)); 
  
 //Get data from flash 
 wire endFlash, audio_done; 
 flash_read getData(.clk(CLK_50M), .waitrequest(flash_mem_waitrequest), 
-					.data_valid(flash_mem_readdatavalid), .start(flash_mem_read), .finish(endFlash)); 
+					.data_valid(flash_mem_readdatavalid), .start(start_flash_read), .finish(endFlash), .read(flash_mem_read)); 
             
 
 //assign Sample_Clk_Signal = Clock_1KHz;
@@ -284,7 +284,7 @@ wire [7:0] audio_data = audio_signal;
 wire read_signal;
 wire [1:0] direction_reset;
 new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
-							.key(kbd_received_ascii_code),
+							.key(fake_key),
 							.readFinish(audio_done), //change to kbd_received_ascii_code 
 							.start_read(read_signal), 
 							.dir(direction),
@@ -297,7 +297,7 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 							
 							
 //For testing without keyboard ONLY							
-/*reg [7:0] fake_key; 
+reg [7:0] fake_key; 
 always @(*) begin 
 	case(SW[4:0]) 
 		5'b00001: fake_key = character_E; 
@@ -307,7 +307,7 @@ always @(*) begin
 		5'b10000: fake_key = character_R; 
 		default: fake_key = 8'b0000_0000; 
 	endcase 
-end */
+end 
 
 
 
