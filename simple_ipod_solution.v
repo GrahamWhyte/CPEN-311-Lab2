@@ -605,10 +605,11 @@ speed_reg_control_inst
 logic [15:0] scope_sampling_clock_count;
 parameter [15:0] default_scope_sampling_clock_count = 12499; //2KHz
 
-
+//MODIFIED: This always block was changed to take the sampling clock count from the Count_to variable
 always @ (posedge CLK_50M) 
 begin
-    scope_sampling_clock_count <= default_scope_sampling_clock_count+{{16{speed_control_val[15]}},speed_control_val};
+    //scope_sampling_clock_count <= default_scope_sampling_clock_count+{{16{speed_control_val[15]}},speed_control_val};
+	scope_sampling_clock_count <= count_to[15:0];
 end 
 
         
