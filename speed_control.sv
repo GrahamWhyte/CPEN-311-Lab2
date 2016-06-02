@@ -1,6 +1,6 @@
 /*This module takes the speed control pulses in and generates the count_to variable that
   feeds into the clock divider*/
-`define default_speed 32'h8E0
+`define default_speed 32'h470
 module speed_control(input speed_up, speed_down, speed_reset, clk,  
 					output logic [31:0] out_count);
 					

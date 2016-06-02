@@ -12,7 +12,7 @@
 /*This FSM module decides the read_mem, direction, and reset values to feed into
 address FSM based on the keyboard inputs*/
 module new_keyboard_interface(input logic clk, 
-							input logic [7:0] key, 
+							input logic [7:0] keyey, 
 							input readFinish,
 							output logic start_read,
 							output logic dir,
@@ -25,14 +25,14 @@ module new_keyboard_interface(input logic clk,
 			direction	reset
 	*/
 	
-	parameter check_key = 5'b000_00; 
-	parameter Foreward = 5'b001_01;
-	parameter Foreward_reset = 5'b010_00;
-	parameter Foreward_pause = 5'b011_00;
+	parameter check_key = 6'b000_000; 
+	parameter Foreward = 6'b001_001;
+	parameter Foreward_reset = 6'b010_101;
+	parameter Foreward_pause = 6'b011_000;
 	
-	parameter Backward = 5'b100_11;
-	parameter Backward_reset = 5'b101_00;
-	parameter Backward_pause = 5'b110_00;
+	parameter Backward = 6'b100_011;
+	parameter Backward_reset = 6'b101_111;
+	parameter Backward_pause = 6'b110_000;
 	
 	/*TO BE DELETED: names assigned to dir[1:0] output for clarity
 	 *basically the same as setting dir to upper two bits of current state*/
@@ -42,123 +42,82 @@ module new_keyboard_interface(input logic clk,
 	parameter read_backward = 2'b10;
 	parameter reset_backward = 2'b11;*/
 
+	assign restart = state[2]; 
 	assign dir = state[1]; 
 	assign start_read = state[0]; 
 	
-	logic [4:0] state; 
-	logic [4:0] next_state;
+	logic [5:0] state; 
+	logic [7:0] outKey; 
+	//logic [5:0] next_state;
 	
 	/*state register (reset handled in comb block)*/
-	always_ff @(posedge clk)
+	/*always_ff @(posedge clk)
 		state <= next_state;
-		
+	*/
 	/*next state logic*/
-	always_comb begin
+	//always_comb begin
+	
+	assign outKey = key; 
+	
+	always_ff@(posedge clk) begin
 		case(state)
 		
 			check_key: begin 
-						if (key == `character_E) next_state = Foreward; 
-						else if (key == `character_B) next_state = Backward_pause; 
-						else if (key == `character_F) next_state = Foreward_pause; 
-						else next_state = state; 
-						
-						//restart = 0; 
+						if (key == `character_E) state <= Foreward; 
+						else if (key == `character_B) state <= Backward_pause; 
+						else if (key == `character_F) state <= Foreward_pause;
+						else state <= check_key; 
 						end 
 			
 			
-			Foreward_reset: begin 
-				//restart = 1'b1; 
-				next_state = Foreward;
-			end 
+			Foreward_reset: if (readFinish) state <= Foreward;  
 			
 			Foreward: begin 
-				if(!readFinish) next_state = state; 
-				else begin 
 					if(key == `character_R || key == `character_lowercase_r)
-						next_state = Foreward_reset;
+						state <= Foreward_reset;
 					else if(key == `character_D || key == `character_lowercase_d)
-						next_state = Foreward_pause;
+						state <= Foreward_pause;
 					else if(key == `character_B || key == `character_lowercase_b)
-						next_state = Backward;
-					else
-						next_state = state;
-				end 
-				/*if(readFinish) restart = 0;
-				else restart = restart; */
+						state <= Backward;
+					else state <= Foreward; 
 				end 
 					
 			Foreward_pause: begin 
 				if(key == `character_R || key == `character_lowercase_r)
-					next_state = Foreward_reset;
+					state <= Foreward_reset;
 				else if(key == `character_E || key == `character_lowercase_e)
-					next_state = Foreward;
-				else
-					next_state = state;	
-				//restart = 0; 
+					state <= Foreward;
+				else state <= Foreward_pause; 
 				end 
 				
-			Backward_reset: begin 
-				next_state = Backward;
-				end 
+			Backward_reset: if (readFinish) state <= Backward;
+		
 			
 			Backward: begin 
-				if(!readFinish) next_state = state; 
-				else begin
 					if(key == `character_R || key == `character_lowercase_r)
-						next_state = Backward_reset;
-					else if(key == `character_D || key == `character_lowercase_d)
-						next_state = Backward_pause;
+						state <= Backward_reset;
+				    else if(key == `character_D || key == `character_lowercase_d)
+						state <= Backward_pause;
 					else if(key == `character_F || key == `character_lowercase_f)
-						next_state = Foreward;
+						state <= Foreward;
 					else
-						next_state = state;
-				end 
-				/*if(readFinish) restart = 0; 
-				else restart = restart; */
+						state <= Backward;
 				end 
 				
 			Backward_pause: begin 
 				if(key == `character_R || key == `character_lowercase_r)
-					next_state = Backward_reset;
+					state <= Backward_reset;
 				else if(key == `character_E || key == `character_lowercase_e)
-					next_state = Backward;
+					state <= Backward;
 				else
-					next_state = state;	
-					
-				//restart = 0; 
+					state <= Backward_pause;	
 				end 
 				
-			default: begin 
-					next_state = check_key;
-					//restart = restart; 
-				end 
+			default: state <= check_key; 
 		endcase
 	end
 	
-	/*encoded output logic -- see parameters section*/
-	//assign {dir, start_read} = state[1:0];  
-	always_ff@(posedge clk) begin 	
-		case(state)
-		
-			Foreward_reset: restart <= 1'b1; 
-			
-			Foreward: begin 
-					  if(readFinish) restart <= 1'b0; 
-					  else restart <= restart; 
-					  end 
-			
-			Backward: begin 
-					  if(readFinish) restart <= 1'b0; 
-					  else restart <= restart; 
-					  end 
-			
-			Backward_reset: restart <= 1'b1; 
-			
-			default: restart <= restart; 
-		endcase 
-	end 
 	
 	
 endmodule
-	
 						

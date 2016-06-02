@@ -1,3 +1,4 @@
+`define no_key 8'h00 
 `define character_B 8'h42  
 `define character_D 8'h44 
 `define character_E 8'h45 
@@ -58,7 +59,7 @@ always_ff@(posedge clk)
 					end 
 					
 		key_D: begin 
-			    if (key != 8'h00)  
+			    if (key != `no_key)  
 				begin 
 					state <= check_key;
 				end 
@@ -74,13 +75,9 @@ always_ff@(posedge clk)
 					addr <= addr + 23'd2;  
 				end 
 				
-				if (key == 8'h00)   
+				if (key != `no_key)   
 				begin 
-					state <= key_E;
-				end 
-				
-				else begin 
-					state <= check_key; 
+					state <= check_key;
 				end 
 				
 			end 

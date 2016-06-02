@@ -284,8 +284,8 @@ wire [7:0] audio_data = audio_signal;
 wire read_signal;
 wire [1:0] direction_reset;
 new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
-							.key(fake_key),
-							.readFinish(audio_done), //change to kbd_received_ascii_code 
+							.key(kbd_received_ascii_code), //change to kbd_received_ascii_code
+							.readFinish(audio_done),  
 							.start_read(read_signal), 
 							.dir(direction),
 							.restart(restart_read)); 
@@ -296,7 +296,8 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 //doublesync Syncronize_Clocks(.indata(Clock_22KHz),.outdata(Clk_22KHz_Synchronized),.clk(CLK_50M),.reset(1'b1));							
 							
 							
-//For testing without keyboard ONLY							
+//For testing without keyboard ONLY	
+/*						
 reg [7:0] fake_key; 
 always @(*) begin 
 	case(SW[4:0]) 
@@ -308,7 +309,7 @@ always @(*) begin
 		default: fake_key = 8'b0000_0000; 
 	endcase 
 end 
-
+*/
 
 
 //======================================================================================
