@@ -10,7 +10,7 @@
 `define character_lowercase_r 8'h72 
 
 /*This FSM module decides the read_mem, direction, and reset values to feed into
-address FSM based on the keyboard inputs*/
+  address FSM based on the keyboard inputs*/
 module new_keyboard_interface(input logic clk, 
 							input logic [7:0] key, 
 							input readFinish,
@@ -19,13 +19,8 @@ module new_keyboard_interface(input logic clk,
 							output logic dir,
 							output logic restart); 
 	
-	/*States that keyboard presses transition between*/
-	/********outputs encoded in state bits (greycode):
-			State[2]	State[1]	State[0]
-			dir[1]		dir[0]		start_read
-			direction	reset
-	*/
-	
+	/*Parameters for states, upper three bits encode state while lower 3 bits 
+	  encode output */
 	parameter check_key = 6'b000_000; 
 	parameter Foreward = 6'b001_001;
 	parameter Foreward_reset = 6'b010_101;
@@ -35,29 +30,14 @@ module new_keyboard_interface(input logic clk,
 	parameter Backward_reset = 6'b101_111;
 	parameter Backward_pause = 6'b110_000;
 	
-	/*TO BE DELETED: names assigned to dir[1:0] output for clarity
-	 *basically the same as setting dir to upper two bits of current state*/
-	 
-	/*parameter read_forward = 2'b00;	
-	parameter reset_forward = 2'b01;
-	parameter read_backward = 2'b10;
-	parameter reset_backward = 2'b11;*/
-
+	//assign outputs to follow lower state bits
 	assign restart = state[2]; 
 	assign dir = state[1]; 
 	assign start_read = state[0]; 
 	
 	logic [5:0] state; 
-	//logic [5:0] next_state;
-	
-	/*state register (reset handled in comb block)*/
-	/*always_ff @(posedge clk)
-		state <= next_state;
-	*/
-	/*next state logic*/
-	//always_comb begin
 	 
-	
+	/*State transition logic always block*/ 
 	always_ff@(posedge clk) begin
 		case(state)
 		
