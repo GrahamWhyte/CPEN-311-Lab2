@@ -284,8 +284,9 @@ wire [7:0] audio_data = audio_signal;
 wire read_signal;
 wire [1:0] direction_reset;
 new_keyboard_interface keyboard_interface(.clk(CLK_50M), 
-							.key(kbd_received_ascii_code), //change to kbd_received_ascii_code
-							.readFinish(audio_done),  
+							.key(kbd_received_ascii_code),
+							.readFinish(audio_done),
+							.dataReady(kbd_data_ready), 		//change to kbd_received_ascii_code 
 							.start_read(read_signal), 
 							.dir(direction),
 							.restart(restart_read)); 
@@ -296,9 +297,11 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 //doublesync Syncronize_Clocks(.indata(Clock_22KHz),.outdata(Clk_22KHz_Synchronized),.clk(CLK_50M),.reset(1'b1));							
 							
 							
-//For testing without keyboard ONLY	
-/*						
-reg [7:0] fake_key; 
+//generating LED counting at 1HZ
+one_hertz_clock LED_1_hertz(.one_hertz_clock(Clock_1Hz), .LEDR(LED[7:0]));
+							
+//For testing without keyboard ONLY							
+/*reg [7:0] fake_key; 
 always @(*) begin 
 	case(SW[4:0]) 
 		5'b00001: fake_key = character_E; 
@@ -308,8 +311,8 @@ always @(*) begin
 		5'b10000: fake_key = character_R; 
 		default: fake_key = 8'b0000_0000; 
 	endcase 
-end 
-*/
+end */
+
 
 
 //======================================================================================
@@ -603,10 +606,11 @@ speed_reg_control_inst
 logic [15:0] scope_sampling_clock_count;
 parameter [15:0] default_scope_sampling_clock_count = 12499; //2KHz
 
-
+//MODIFIED: This always block was changed to take the sampling clock count from the Count_to variable
 always @ (posedge CLK_50M) 
 begin
-    scope_sampling_clock_count <= default_scope_sampling_clock_count+{{16{speed_control_val[15]}},speed_control_val};
+    //scope_sampling_clock_count <= default_scope_sampling_clock_count+{{16{speed_control_val[15]}},speed_control_val};
+	scope_sampling_clock_count <= count_to[15:0];
 end 
 
         

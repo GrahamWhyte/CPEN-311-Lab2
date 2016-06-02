@@ -12,8 +12,9 @@
 /*This FSM module decides the read_mem, direction, and reset values to feed into
 address FSM based on the keyboard inputs*/
 module new_keyboard_interface(input logic clk, 
-							input logic [7:0] keyey, 
+							input logic [7:0] key, 
 							input readFinish,
+							input dataReady, 
 							output logic start_read,
 							output logic dir,
 							output logic restart); 
@@ -47,7 +48,6 @@ module new_keyboard_interface(input logic clk,
 	assign start_read = state[0]; 
 	
 	logic [5:0] state; 
-	logic [7:0] outKey; 
 	//logic [5:0] next_state;
 	
 	/*state register (reset handled in comb block)*/
@@ -56,8 +56,7 @@ module new_keyboard_interface(input logic clk,
 	*/
 	/*next state logic*/
 	//always_comb begin
-	
-	assign outKey = key; 
+	 
 	
 	always_ff@(posedge clk) begin
 		case(state)
@@ -70,11 +69,15 @@ module new_keyboard_interface(input logic clk,
 						end 
 			
 			
-			Foreward_reset: if (readFinish) state <= Foreward;  
+			Foreward_reset: begin 
+							if (readFinish) state <= Foreward; 
+							end 
 			
 			Foreward: begin 
-					if(key == `character_R || key == `character_lowercase_r)
-						state <= Foreward_reset;
+					if(key == `character_R || key == `character_lowercase_r) begin 
+						if(dataReady) state <= Foreward_reset;
+						else state <= Foreward; 
+					end 
 					else if(key == `character_D || key == `character_lowercase_d)
 						state <= Foreward_pause;
 					else if(key == `character_B || key == `character_lowercase_b)
@@ -94,8 +97,10 @@ module new_keyboard_interface(input logic clk,
 		
 			
 			Backward: begin 
-					if(key == `character_R || key == `character_lowercase_r)
-						state <= Backward_reset;
+					if(key == `character_R || key == `character_lowercase_r) begin 
+						if (dataReady) state <= Backward_reset;
+						else state <= Backward; 
+					end 
 				    else if(key == `character_D || key == `character_lowercase_d)
 						state <= Backward_pause;
 					else if(key == `character_F || key == `character_lowercase_f)
