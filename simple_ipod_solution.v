@@ -123,9 +123,9 @@ output                      DRAM_WE_N;
 //=======================================================
 // Input and output declarations
 logic CLK_50M;
-logic  [7:0] LED;
+logic  [9:0] LED;
 assign CLK_50M =  CLOCK_50;
-assign LEDR[7:0] = LED[7:0];
+assign LEDR[9:0] = LED[9:0]; //Changed from LED[7:0]
 
 //Character definitions
 
@@ -272,12 +272,8 @@ flash_read getData(.clk(CLK_50M), .waitrequest(flash_mem_waitrequest),
 					.data_valid(flash_mem_readdatavalid), .start(start_flash_read), .finish(endFlash), .read(flash_mem_read)); 
             
 
-//assign Sample_Clk_Signal = Clock_1KHz;
 
-//Audio Generation Signal
-//Note that the audio needs signed data - so convert 1 bit to 8 bits signed
-//wire [7:0] audio_data = {~Sample_Clk_Signal,{7{Sample_Clk_Signal}}}; //generate signed sample audio signal
-
+//audio data 
 wire [7:0] audio_data = audio_signal; 
 
 // new Keyboard Interface
@@ -291,29 +287,36 @@ new_keyboard_interface keyboard_interface(.clk(CLK_50M),
 							.dir(direction),
 							.restart(restart_read)); 
 							
-							
+//Synchonize rising edge of 22KHz clock with 50 MHz clock 						
 wire Clk_22KHz_Synchronized; 
 async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .outclk(CLK_50M), .out_sync_sig(Clk_22KHz_Synchronized), .auto_reset(1'b1), .reset(1'b1));
-//doublesync Syncronize_Clocks(.indata(Clock_22KHz),.outdata(Clk_22KHz_Synchronized),.clk(CLK_50M),.reset(1'b1));							
 							
-							
-//generating LED counting at 1HZ
-one_hertz_clock LED_1_hertz(.one_hertz_clock(Clock_1Hz), .LEDR(LED[7:0]));
-							
-//For testing without keyboard ONLY							
-/*reg [7:0] fake_key; 
-always @(*) begin 
-	case(SW[4:0]) 
-		5'b00001: fake_key = character_E; 
-		5'b00010: fake_key = character_D; 
-		5'b00100: fake_key = character_B; 
-		5'b01000: fake_key = character_F; 
-		5'b10000: fake_key = character_R; 
-		default: fake_key = 8'b0000_0000; 
-	endcase 
-end */
+////////////////////////////////////Lab3///////////////////////////////////// 
 
+//Generate 25KHz Clock 
+ reg CLK_25;
+ always @(posedge CLK_50M)
+    begin
+         CLK_25 <= !CLK_25;
+    end 
 
+wire [7:0] LCD_DATA; 
+wire LCD_RS, LCD_RW, LCD_EN; 
+wire [3:0] sync_SW; 
+//Instantiate PicoBlaze
+picoblaze_template
+#(
+.clk_freq_in_hz(25000000)
+) 
+picoblaze_template_inst(
+                        .led(LED[9:0]),      //Using all 10 LEDs 
+                      .lcd_d(LCD_DATA),     //Not using LCD, only need Clock and LEDs 
+                      .lcd_rs(LCD_RS),
+                      .lcd_rw(LCD_RW),
+                      .lcd_e(LCD_EN),
+                        .clk(CLK_25),
+                .input_data({4'h0,sync_SW[3:0]}) //Not using switches either 
+                 ); 
 
 //======================================================================================
 // 
