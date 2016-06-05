@@ -27,7 +27,7 @@ module new_keyboard_interface(input logic clk,
 							output logic dir,
 							output logic restart); 
 	
-	//State encodings 
+
 	parameter check_key = 6'b000_000; 
 	parameter Foreward = 6'b001_001;
 	parameter Foreward_reset = 6'b010_101;
@@ -36,13 +36,12 @@ module new_keyboard_interface(input logic clk,
 	parameter Backward_reset = 6'b101_111;
 	parameter Backward_pause = 6'b110_000;
 	
-	//Outputs dependant on lower bits of state encoding 
 	assign restart = state[2]; 
 	assign dir = state[1]; 
 	assign start_read = state[0]; 
 	
 	logic [5:0] state; 
-
+	
 	always_ff@(posedge clk) begin
 		case(state)
 		
