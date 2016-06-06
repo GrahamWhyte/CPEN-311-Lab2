@@ -300,22 +300,22 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
          CLK_25 <= !CLK_25;
     end 
 
-wire [7:0] LCD_DATA; 
-wire LCD_RS, LCD_RW, LCD_EN; 
-wire [3:0] sync_SW; 
+
 //Instantiate PicoBlaze
 picoblaze_template
 #(
 .clk_freq_in_hz(25000000)
 ) 
 picoblaze_template_inst(
-                        .led(LED[9:0]),      //Using all 10 LEDs 
-                      .lcd_d(LCD_DATA),     //Not using LCD, only need Clock and LEDs 
-                      .lcd_rs(LCD_RS),
-                      .lcd_rw(LCD_RW),
-                      .lcd_e(LCD_EN),
+                        .led_volume(LED[9:2]),
+						.led_blinker(LED[0]),  
+						.interrupt_signal(audio_done), //Interrupt whenever data is read  
+                      //.lcd_d(LCD_DATA),     //Not using LCD, only need Clock and LEDs 
+                      //.lcd_rs(LCD_RS),
+                      //.lcd_rw(LCD_RW),
+                      //.lcd_e(LCD_EN),
                         .clk(CLK_25),
-                .input_data({4'h0,sync_SW[3:0]}) //Not using switches either 
+                .input_data(audio_data) //Send audio data  
                  ); 
 
 //======================================================================================

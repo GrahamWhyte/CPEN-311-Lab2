@@ -6,11 +6,13 @@ picoblaze_template
 #(
 parameter clk_freq_in_hz = 25000000
 ) (
-				output reg[9:0] led,
-            inout [7:0] lcd_d,
-            output reg lcd_rs,
-            output lcd_rw,
-            output reg lcd_e,
+				output reg[7:0] led_volume,
+				output reg led_blinker,
+            //inout [7:0] lcd_d,
+            //output reg lcd_rs,
+            //output lcd_rw,
+            //output reg lcd_e, 
+				input interrupt_signal, 
 				input clk, 
 				input [7:0] input_data
 			     );
@@ -89,10 +91,10 @@ pacoblaze3 led_8seg_kcpsm
 
 // Note that because we are using clock enable we DO NOT need to synchronize with clk
 
-  always @ (posedge clk)
+  /*always @ (posedge clk)
   begin
-      //--divide 50MHz by 50,000,000 to form 1Hz pulses
-      if (int_count==(clk_freq_in_hz-1)) //clock enable
+      //Interrupt every flash read 
+      if (int_count==(interrupt_count-1)) //clock enable
 		begin
          int_count <= 0;
          event_1hz <= 1;
@@ -101,7 +103,8 @@ pacoblaze3 led_8seg_kcpsm
          int_count <= int_count + 1;
          event_1hz <= 0;
       end
- end
+ end*/
+ assign event_1hz = interrupt_signal ? 1'b1: 1'b0; 
 
  always @ (posedge clk or posedge interrupt_ack)  //FF with clock "clk" and reset "interrupt_ack"
  begin
@@ -147,20 +150,20 @@ end
 
         //LED is port 80 hex 
         if (write_strobe & port_id[7])  //clock enable 
-          led <= out_port;
+          led_volume <= out_port;
        
 //        -- 8-bit LCD data output address 40 hex.
         if (write_strobe & port_id[6])  //clock enable
-          lcd_output_data <= out_port;
+          led_blinker <= out_port;
       
 //        -- LCD controls at address 20 hex.
-        if (write_strobe & port_id[5]) //clock enable
+     /*   if (write_strobe & port_id[5]) //clock enable
 	  begin
              lcd_rs <= out_port[2];
              lcd_rw_control <= out_port[1];
              lcd_e <= out_port[0];
         end
-
+*/
   end
 
 //  --
@@ -173,10 +176,10 @@ end
 //  --
 //  -- Control of read and write signal
 
-  assign lcd_rw = lcd_rw_control;
+  //assign lcd_rw = lcd_rw_control;
 
 //  -- use read/write control to enable output buffers.
-  assign lcd_d = lcd_rw_control ? 8'bZZZZZZZZ : lcd_output_data;
+  //assign lcd_d = lcd_rw_control ? 8'bZZZZZZZZ : lcd_output_data;
 
 
 endmodule
