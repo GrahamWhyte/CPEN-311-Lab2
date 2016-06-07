@@ -1,41 +1,49 @@
-/*Sets address data will be read from
-Inputs from keyboard: Direction to count, start bit, restart signal 
-Inputs from flash: end signal, data in flash 
+/*
+Purpose: Sets address data will be read from
+		 Outputs sound signal to audio
+
+Inputs from top module: 50 MHz Clock, Rising edge of 22 KHz Clock synchonized with 50 MHz Clock 
+Inputs from keyboard: start signal, direction to count, restart signal 
+Inputs from flash: end signal, audio data 
 
 Outputs: Address and bytes to read from 
 		 Sound signal for audio 
-		 Start signal for flash and end signal 
+		 Start and read signal to flash  
+		 End signal to keyboard  
 */
 
 `define address_max 23'h7FFFF
 
-module addr_inc(clk, audioClk, start, dir, restart, endFlash, address, byteenable, startFlash, finish, read, songData, outData); 
+module addr_inc(clk, audioClk, start, dir, restart, endFlash, address, byteenable, startFlash, finish, read, songData, outData, volume_sig); 
 
 input clk, audioClk, start, endFlash, dir, restart;  
 input [31:0] songData; 
-output startFlash, finish, read; 
+output startFlash, finish, read, volume_sig; 
 output [3:0] byteenable; 
 output [22:0] address; 
 output [7:0] outData; //To audio 
 
-parameter idle = 6'b0000_00; 
-parameter readFlash = 6'b0001_01; 
-parameter get_data_1 = 6'b0010_00; 
-parameter read_data_1 = 6'b0011_00; 
-parameter get_data_2 = 6'b0100_00; 
-parameter read_data_2 = 6'b0101_00; 
-parameter checkInc = 6'b0110_00; 
-parameter inc_addr = 6'b0111_00; 
-parameter dec_addr = 6'b1000_00; 
-parameter finished = 6'b1001_10; 
+parameter idle = 7'b0000_000; 
+parameter readFlash = 7'b0001_001; 
+parameter get_data_1 = 7'b0010_000; 
+parameter read_data_1 = 7'b0011_000; 
+parameter get_data_2 = 7'b0100_000; 
+parameter read_data_2 = 7'b0101_000; 
+parameter checkInc = 7'b0110_000; 
+parameter inc_addr = 7'b0111_000; 
+parameter dec_addr = 7'b1000_000; 
+parameter finished = 7'b1001_010; 
+parameter interrupt_1 = 7'b1010_100; 
+parameter interrupt_2 = 7'b1011_100; 
 
 
-logic [5:0] state; 
+logic [6:0] state; 
 //logic flag;  
 
 assign startFlash = state[0]; 
 assign finish = state[1]; 
 assign read = state[0]; 
+assign volume_sig = state[2]; 
 
 assign byteenable = 4'b1111; //always read all data 
 		
@@ -51,13 +59,17 @@ always_ff@(posedge clk) begin
 				   if(endFlash) state <= get_data_1; 
 				   end 
 				   
-		get_data_1: if(audioClk) state <= read_data_1; 
+		get_data_1: if(audioClk) state <= read_data_1; //Wait for rising edge of 22 KHz clock 
 				  
-		read_data_1: state <= get_data_2;  
+		read_data_1: state <= interrupt_1; 
+
+		interrupt_1: state <= get_data_2;
 		
-		get_data_2: if(audioClk) state <= read_data_2; 
+		get_data_2: if(audioClk) state <= read_data_2; //Wait for rising edge of 22 KHz clock  
 		
-		read_data_2: state <= checkInc; 
+		read_data_2: state <= interrupt_2;
+
+		interrupt_2: state <= checkInc; 
 				   
 		checkInc: begin 
 				  if(dir) state <= dec_addr; 

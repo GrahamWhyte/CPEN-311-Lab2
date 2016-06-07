@@ -94,7 +94,7 @@ pacoblaze3 led_8seg_kcpsm
   /*always @ (posedge clk)
   begin
       //Interrupt every flash read 
-      if (int_count==(interrupt_count-1)) //clock enable
+      if (int_count==(clk_freq_in_hz-1)) //clock enable
 		begin
          int_count <= 0;
          event_1hz <= 1;
@@ -148,38 +148,17 @@ end
   always @ (posedge clk)
   begin
 
-        //LED is port 80 hex 
+        //LED[9:2] is port 80 hex 
         if (write_strobe & port_id[7])  //clock enable 
           led_volume <= out_port;
        
-//        -- 8-bit LCD data output address 40 hex.
+//      LED[0] is at port 40 hex 
         if (write_strobe & port_id[6])  //clock enable
           led_blinker <= out_port;
       
-//        -- LCD controls at address 20 hex.
-     /*   if (write_strobe & port_id[5]) //clock enable
-	  begin
-             lcd_rs <= out_port[2];
-             lcd_rw_control <= out_port[1];
-             lcd_e <= out_port[0];
-        end
-*/
+
   end
 
-//  --
-//  ----------------------------------------------------------------------------------------------------------------------------------
-//  -- LCD interface  
-//  ----------------------------------------------------------------------------------------------------------------------------------
-//  --
-//  -- The LCD will be accessed using the 8-bit mode.  
-//  -- lcd_rw is '1' for read and '0' for write 
-//  --
-//  -- Control of read and write signal
-
-  //assign lcd_rw = lcd_rw_control;
-
-//  -- use read/write control to enable output buffers.
-  //assign lcd_d = lcd_rw_control ? 8'bZZZZZZZZ : lcd_output_data;
 
 
 endmodule

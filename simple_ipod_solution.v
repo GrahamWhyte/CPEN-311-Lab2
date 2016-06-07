@@ -264,7 +264,8 @@ speed_control SpeedControler(.speed_up(speed_up_event), .speed_down(speed_down_e
 wire [7:0] audio_signal;
 wire direction, restart_read, start_flash_read;   
 addr_inc audio(.clk(CLK_50M), .audioClk(Clk_22KHz_Synchronized), .start(read_signal), .dir(direction), .restart(restart_read),  .endFlash(endFlash), .address(flash_mem_address), 
-				.byteenable(flash_mem_byteenable), .startFlash(start_flash_read), .finish(audio_done), .songData(flash_mem_readdata), .outData(audio_signal), .read(flash_mem_read)); 
+				.byteenable(flash_mem_byteenable), .startFlash(start_flash_read), .finish(audio_done), 
+					.songData(flash_mem_readdata), .outData(audio_signal), .read(flash_mem_read), .volume_sig(volume_signal)); 
  
 //Get data from flash 
 wire endFlash, audio_done; 
@@ -293,14 +294,18 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 							
 ////////////////////////////////////Lab3///////////////////////////////////// 
 
-//Generate 25KHz Clock 
+wire [7:0] volume_abs_value; 
+//Get absolute value 
+absolute_value volume(.clk(CLK_50M), .data(audio_signal), .abs(volume_abs_value)); 
+
+//Generate 25MHz Clock 
  reg CLK_25;
  always @(posedge CLK_50M)
     begin
          CLK_25 <= !CLK_25;
     end 
 
-
+wire volume_signal; 
 //Instantiate PicoBlaze
 picoblaze_template
 #(
@@ -309,14 +314,16 @@ picoblaze_template
 picoblaze_template_inst(
                         .led_volume(LED[9:2]),
 						.led_blinker(LED[0]),  
-						.interrupt_signal(audio_done), //Interrupt whenever data is read  
                       //.lcd_d(LCD_DATA),     //Not using LCD, only need Clock and LEDs 
                       //.lcd_rs(LCD_RS),
                       //.lcd_rw(LCD_RW),
                       //.lcd_e(LCD_EN),
+						.interrupt_signal(audio_done), //For some reason this works but shorter intervals don't  
                         .clk(CLK_25),
-                .input_data(audio_data) //Send audio data  
+                .input_data(volume_abs_value) //Send audio data  
                  ); 
+				 
+				 
 
 //======================================================================================
 // 

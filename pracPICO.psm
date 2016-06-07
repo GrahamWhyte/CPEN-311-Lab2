@@ -33,8 +33,10 @@
                     CONSTANT ISR_preserve_s1, 01        ;Preserve s1 contents during ISR
                     CONSTANT ISR_preserve_s2, 02        ;Preserve s2 contents during ISR
                     CONSTANT ISR_preserve_s3, 03        ;Preserve s3 contents during ISR
+					
+					
                     ;
-                    CONSTANT counter, 04            ;remember count value 
+                    CONSTANT counter, 04           ;remember count value 
 					CONSTANT lower_sum, 05          ;remember lower bits of the sum value 
 					CONSTANT upper_sum, 06             ;remember upper bits of the sum 
                    
@@ -60,86 +62,7 @@
                     ;
                     ;
                     ;
-                    ; ASCII table
-                    ;
-                    CONSTANT character_a, 61
-                    CONSTANT character_b, 62
-                    CONSTANT character_c, 63
-                    CONSTANT character_d, 64
-                    CONSTANT character_e, 65
-                    CONSTANT character_f, 66
-                    CONSTANT character_g, 67
-                    CONSTANT character_h, 68
-                    CONSTANT character_i, 69
-                    CONSTANT character_j, 6A
-                    CONSTANT character_k, 6B
-                    CONSTANT character_l, 6C
-                    CONSTANT character_m, 6D
-                    CONSTANT character_n, 6E
-                    CONSTANT character_o, 6F
-                    CONSTANT character_p, 70
-                    CONSTANT character_q, 71
-                    CONSTANT character_r, 72
-                    CONSTANT character_s, 73
-                    CONSTANT character_t, 74
-                    CONSTANT character_u, 75
-                    CONSTANT character_v, 76
-                    CONSTANT character_w, 77
-                    CONSTANT character_x, 78
-                    CONSTANT character_y, 79
-                    CONSTANT character_z, 7A
-                    CONSTANT character_A, 41
-                    CONSTANT character_B, 42
-                    CONSTANT character_C, 43
-                    CONSTANT character_D, 44
-                    CONSTANT character_E, 45
-                    CONSTANT character_F, 46
-                    CONSTANT character_G, 47
-                    CONSTANT character_H, 48
-                    CONSTANT character_I, 49
-                    CONSTANT character_J, 4A
-                    CONSTANT character_K, 4B
-                    CONSTANT character_L, 4C
-                    CONSTANT character_M, 4D
-                    CONSTANT character_N, 4E
-                    CONSTANT character_O, 4F
-                    CONSTANT character_P, 50
-                    CONSTANT character_Q, 51
-                    CONSTANT character_R, 52
-                    CONSTANT character_S, 53
-                    CONSTANT character_T, 54
-                    CONSTANT character_U, 55
-                    CONSTANT character_V, 56
-                    CONSTANT character_W, 57
-                    CONSTANT character_X, 58
-                    CONSTANT character_Y, 59
-                    CONSTANT character_Z, 5A
-                    CONSTANT character_0, 30
-                    CONSTANT character_1, 31
-                    CONSTANT character_2, 32
-                    CONSTANT character_3, 33
-                    CONSTANT character_4, 34
-                    CONSTANT character_5, 35
-                    CONSTANT character_6, 36
-                    CONSTANT character_7, 37
-                    CONSTANT character_8, 38
-                    CONSTANT character_9, 39
-                    CONSTANT character_colon, 3A
-                    CONSTANT character_stop, 2E
-                    CONSTANT character_semi_colon, 3B
-                    CONSTANT character_minus, 2D
-                    CONSTANT character_divide, 2F       ;'/'
-                    CONSTANT character_plus, 2B
-                    CONSTANT character_comma, 2C
-                    CONSTANT character_less_than, 3C
-                    CONSTANT character_greater_than, 3E
-                    CONSTANT character_equals, 3D
-                    CONSTANT character_space, 20
-                    CONSTANT character_CR, 0D           ;carriage return
-                    CONSTANT character_question, 3F     ;'?'
-                    CONSTANT character_dollar, 24
-                    CONSTANT character_exclaim, 21      ;'!'
-                    CONSTANT character_BS, 08           ;Back Space command character
+                   
                     ;
                     ;
                     ;
@@ -164,7 +87,7 @@
                     ;
                     ; Blink LED 0 at a rate of 1 Hz 
                     ;
-      main_program: LOAD s0, 01    ;Turn on LEDR0 
+      main_program: LOAD s0, 01    ;Turn on LEDR0                         Temporarily removed, debugging ISR 
 					OUTPUT s0, LED_port_blinker  
 					CALL delay_1s
 					LOAD s0, 00    ;Turn off LEDR0 
@@ -244,59 +167,48 @@
                     ; Interrupt Service Routine (ISR)
                     ;**************************************************************************************
                     ;
-                    ; The interrupt is used purely to provide a 1 second heart beat binary counter pattern
-                    ; on the 8 LEDs.
+                    ; 
                     ;
                ISR: STORE s0, ISR_preserve_s0           ;preserve register
 					STORE s1, ISR_preserve_s1			;preserve register 
 					STORE s2, ISR_preserve_s2           ;preserve register 
 					STORE s3, ISR_preserve_s3           ;preserve register 
 					
+					
 					FETCH s0, counter 					;read count value 
 					FETCH s1, lower_sum 				;read sum 
 					FETCH s2, upper_sum 				;read sum 
 					
 					COMPARE s0, FF 						;check if counter is full 
-					JUMP Z, display_on_LED
+					JUMP Z, Average 
 					
 					INPUT s3, DATA_IN_PORT 				;read audio value 
-					ADD s1, s3 							;Add to sum 
-					JUMP C, next_reg					;Jump if number is too big for register 
-					AND s1, 3F                          ;And with 00111111 to remove upper 2 bits 
-					JUMP display_on_LED  
-					
-		  next_reg: ADDCY s2, s3 						;Add with carry  
+					ADD s1, s3 							;Add to sum
+					JUMP NC, increment_counter
+					ADDCY s2, 00 						;Count number of times 256 has passed 
  
  increment_counter: ADD s0, 01 							;increment counter 
 					JUMP end_interrupt 
 					
-   display_on_LED: LOAD s0, 00 
-				   OUTPUT s2, LED_port_volume           ;output volume to LEDs 
-				   
-    end_interrupt: STORE s2, upper_sum                  ;store values to proper locations  
-				   STORE s1, lower_sum 
-				   STORE s0, counter 
-				   FETCH s0, ISR_preserve_s0 			;Restore registers 
-				   FETCH s1, ISR_preserve_s1 
-				   FETCH s2, ISR_preserve_s2 
-				   FETCH s3, ISR_preserve_s3 
-				   RETURNI ENABLE 
+          Average:  ADD s2, s1                         ;(256*carry + s1)/256   
+				    							
+		LED_prep:	LOAD s0, 00 						 ;reset counter
+		
 					
-
-
-
-
-
-
-					;OLD ISR 
-                    ;FETCH s0, LED_pattern               ;read current counter value
-                    ;ADD s0, 01                          ;increment counter
-                    ;STORE s0, LED_pattern               ;store new counter value
-                    ;OUTPUT s0, LED_port_volume                 ;display counter value on LEDs
-                    ;FETCH s0, ISR_preserve_s0           ;restore register
-                    ;RETURNI ENABLE
-                    ;
-                    ;
+	Display_LED:    OUTPUT s2, LED_port_volume           ;output volume to LEDs 
+					LOAD s2, 00							 ;reset upper sum  
+					LOAD s1, 00 						 ;reset lower sum 
+				   
+    end_interrupt:  STORE s2, upper_sum                  ;store values to proper locations  
+				    STORE s1, lower_sum 
+				    STORE s0, counter 
+				    FETCH s0, ISR_preserve_s0 			;Restore registers 
+				    FETCH s1, ISR_preserve_s1 
+				    FETCH s2, ISR_preserve_s2 
+				    FETCH s3, ISR_preserve_s3 
+					
+				    RETURNI ENABLE 
+					
                     ;**************************************************************************************
                     ; Interrupt Vector
                     ;**************************************************************************************
@@ -305,3 +217,34 @@
                     JUMP ISR
                     ;
                     ;
+					
+					;		    COMPARE s2, 1F                       ;Compare with 00011111
+		;		    JUMP C, Check_15					 ;Jump if smaller 
+		;			JUMP Z, load_31                      ;Jump if equal 
+		;		    LOAD s2, 3F 						 ;s2 gets 00111111 
+		;			JUMP Display_LED 
+					
+		; Check_15: COMPARE s2, 0F                        ;Compare with 00001111 
+		;		   JUMP C, Check_7 
+		;		   JUMP Z, load_15  
+	    ;  load_31: LOAD s2, 1F 
+		;		   JUMP Display_LED 
+				   
+		; Check_7:  COMPARE s2, 07						;compare with 00000111 
+		;		   JUMP C, Check_3 
+		;		   JUMP Z, load_7 
+	    ; load_15:  LOAD s2, 0F 
+		;		   JUMP Display_LED 
+				   
+		; Check_3:  COMPARE s2, 03                       ;compare with 00000011
+		;		   JUMP C, Check_1 
+		;		   JUMP Z, load_3 
+		;  load_7:  LOAD s2, 07 
+		;		   JUMP Display_LED
+				   
+		; Check_1: Compare s2, 01 						;compare with 00000001
+		;		  JUMP Z, equal_1 
+		;  load_3: LOAD s2, 03 
+		;          JUMP Display_LED 
+				  
+		; equal_1: LOAD s2, 01 		
