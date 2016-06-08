@@ -8,6 +8,7 @@ parameter clk_freq_in_hz = 25000000
 ) (
 				output reg[7:0] led_volume,
 				output reg led_blinker,
+				output reg [7:0] hex_display,
             //inout [7:0] lcd_d,
             //output reg lcd_rs,
             //output lcd_rw,
@@ -155,6 +156,9 @@ end
 //      LED[0] is at port 40 hex 
         if (write_strobe & port_id[6])  //clock enable
           led_blinker <= out_port;
+		  
+		if (write_strobe & port_id[5]) 
+		  hex_display <= out_port; 
       
 
   end

@@ -294,9 +294,9 @@ async_trap_and_reset_gen_1_pulse Syncronize_Clocks(.async_sig(Clock_22KHz), .out
 							
 ////////////////////////////////////Lab3///////////////////////////////////// 
 
-wire [7:0] volume_abs_value; 
+//wire [7:0] volume_abs_value; 
 //Get absolute value 
-absolute_value volume(.clk(CLK_50M), .data(audio_signal), .abs(volume_abs_value)); 
+//absolute_value volume(.clk(CLK_50M), .data(audio_signal), .abs(volume_abs_value)); 
 
 //Generate 25MHz Clock 
  reg CLK_25;
@@ -305,6 +305,7 @@ absolute_value volume(.clk(CLK_50M), .data(audio_signal), .abs(volume_abs_value)
          CLK_25 <= !CLK_25;
     end 
 
+wire [7:0] volume_on_hex; 
 wire volume_signal; 
 //Instantiate PicoBlaze
 picoblaze_template
@@ -313,14 +314,15 @@ picoblaze_template
 ) 
 picoblaze_template_inst(
                         .led_volume(LED[9:2]),
-						.led_blinker(LED[0]),  
+						.led_blinker(LED[0]),
+						.hex_display(volume_on_hex),  
                       //.lcd_d(LCD_DATA),     //Not using LCD, only need Clock and LEDs 
                       //.lcd_rs(LCD_RS),
                       //.lcd_rw(LCD_RW),
                       //.lcd_e(LCD_EN),
-						.interrupt_signal(audio_done), //For some reason this works but shorter intervals don't  
-                        .clk(CLK_25),
-                .input_data(volume_abs_value) //Send audio data  
+						.interrupt_signal(volume_signal), //For some reason this works but shorter intervals don't  
+                        .clk(CLK_50M),
+                .input_data(audio_data) //Send audio data  
                  ); 
 				 
 				 
@@ -428,7 +430,7 @@ Generate_LCD_scope_Clk(
 .inclk(CLK_50M),
 .outclk(scope_clk),
 .outclk_Not(),
-.div_clk_count(scope_sampling_clock_count),
+.div_clk_count(scope_sampling_clock_count_1),
 .Reset(1'h1));
 
 //Scope capture channels
@@ -613,14 +615,16 @@ speed_reg_control_inst
 .speed_control_val(speed_control_val)
 );
 
-logic [15:0] scope_sampling_clock_count;
+logic [15:0] scope_sampling_clock_count_1; 
+logic [7:0] scope_sampling_clock_count_2; 
 parameter [15:0] default_scope_sampling_clock_count = 12499; //2KHz
 
 //MODIFIED: This always block was changed to take the sampling clock count from the Count_to variable
 always @ (posedge CLK_50M) 
 begin
     //scope_sampling_clock_count <= default_scope_sampling_clock_count+{{16{speed_control_val[15]}},speed_control_val};
-	scope_sampling_clock_count <= count_to[15:0];
+	scope_sampling_clock_count_1 <= count_to[15:0];
+	scope_sampling_clock_count_2 <= volume_on_hex; 
 end 
 
         
@@ -670,7 +674,7 @@ assign Seven_Seg_Data[3] = regd_actual_7seg_output[15:12];
 assign Seven_Seg_Data[4] = regd_actual_7seg_output[19:16];
 assign Seven_Seg_Data[5] = regd_actual_7seg_output[23:20];
     
-assign actual_7seg_output =  scope_sampling_clock_count;
+assign actual_7seg_output =  {scope_sampling_clock_count_2, scope_sampling_clock_count_1};
 
 
 
